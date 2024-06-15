@@ -1,4 +1,0 @@
-import graphics
-env HOME
-ro-bind $HOME/.themes
-ro-bind $HOME/.config/dconf

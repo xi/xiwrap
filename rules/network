@@ -1,3 +1,4 @@
 share-net
 ro-bind /etc/resolv.conf
-ro-bind /etc/ssl/certs/ca-certificates.crt
+ro-bind /etc/ssl
+ro-bind /etc/ca-certificates

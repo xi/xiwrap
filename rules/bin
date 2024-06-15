@@ -1,4 +1,0 @@
-ro-bind /bin
-ro-bind /lib
-ro-bind /lib64
-ro-bind /usr

@@ -1,0 +1,12 @@
+import graphics
+env HOME
+ro-bind /etc/fonts
+ro-bind /usr/share/fonts
+ro-bind /usr/share/icons
+ro-bind /usr/share/themes/
+ro-bind $HOME/.local/share/fonts
+ro-bind $HOME/.local/share/icons
+ro-bind $HOME/.local/share/themes
+bind $HOME/.cache/fontconfig
+bind $HOME/.cache/thumbnails
+ro-bind $HOME/.config/dconf/user

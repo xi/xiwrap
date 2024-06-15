@@ -8,7 +8,7 @@ SYSTEM_CONFIG = Path('/etc') / 'xiwrap'
 
 USAGE = """Usage: xiwrap [OPTION]... -- [BWRAP_OPTIONS]... CMD
 
-Example: xiwrap --import bin --env TERM -- --chdir /tmp bash
+Example: xiwrap --import host-os --env TERM -- --chdir /tmp bash
 
 The following options are available:
 
