@@ -17,9 +17,11 @@ The following options are available:
 --env VAR [VALUE]       Set an environment variable. If VALUE is not provided,
                         the value from the current environment is kept.
 --bind DEST [SRC]       Bind mount the host path SRC on DEST. If SRC is not
-                        provided, it is the same as DEST.
+                        provided, it is the same as DEST. Ignored if SRC does
+                        not exist.
 --ro-bind DEST [SRC]    Bind mount the host path SRC readonly on DEST. If SRC
-                        is not provided, it is the same as DEST.
+                        is not provided, it is the same as DEST. Ignored if SRC
+                        does not exist.
 --proc DEST             Mount new procfs on DEST.
 --dev DEST              Mount new dev on DEST.
 --tmpfs DEST            Mount new tmpfs on DEST.
@@ -151,7 +153,7 @@ class RuleSet:
             if src is None:
                 cmd += [f'--{typ}', target]
             else:
-                cmd += [f'--{typ}', src, target]
+                cmd += [f'--{typ}-try', src, target]
         return cmd + bwrap_args
 
 
