@@ -1,0 +1,2 @@
+env XDG_RUNTIME_DIR
+ro-bind $XDG_RUNTIME_DIR/pulse
