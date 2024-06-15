@@ -1,10 +1,16 @@
 import os
+import subprocess
 import sys
 from os.path import expandvars
 from pathlib import Path
 
-USER_CONFIG = Path(os.getenv('XDG_CONFIG_HOME', '~/.config')) / 'xiwrap'
+XDG_RUNTIME_DIR = Path(os.getenv('XDG_RUNTIME_DIR'))
+XDG_CONFIG_HOME = Path(os.getenv('XDG_CONFIG_HOME', '~/.config')).expanduser()
+
+USER_CONFIG = XDG_CONFIG_HOME / 'xiwrap'
 SYSTEM_CONFIG = Path('/etc') / 'xiwrap'
+
+DBUS_PROXY_PATH = XDG_RUNTIME_DIR / f'dbus-proxy-{os.getpid()}'
 
 USAGE = """Usage: xiwrap [OPTION]... -- [BWRAP_OPTIONS]... CMD
 
@@ -26,6 +32,12 @@ The following options are available:
 --dev DEST              Mount new dev on DEST.
 --tmpfs DEST            Mount new tmpfs on DEST.
 --share-net             Do not create new network namespace.
+--dbus-see NAME         Allow to see NAME on the session bus.
+--dbus-talk NAME        Allow to talk to NAME on the session bus.
+--dbus-own NAME         Allow to own NAME on the session bus.
+--dbus-call NAME=RULE   Set a rule for calls on the given name.
+--dbus-broadcast NAME=RULE
+                        Set a rule for broadcast signals from the given name.
 --import FILE           Load additional options from FILE. FILE can be an
                         absolute path or relative to the current directory,
                         $XDG_CONFIG_HOME/xiwrap/ or /etc/xiwrap/. FILE must
@@ -48,8 +60,9 @@ class RuleSet:
             '/dev': ('dev', None),
             '/proc': ('proc', None),
         }
-        self.dbus = set()  # TODO
+        self.dbus = {}
         self.share_net = False
+        self.sync_fds = None
         self.debug = False
         self.usage = False
 
@@ -80,6 +93,14 @@ class RuleSet:
         else:
             raise RuleError(key, args)
 
+    def ensure_dbus(self):
+        if self.sync_fds is not None:
+            return
+        self.sync_fds = os.pipe2(0)
+        bus = str(XDG_RUNTIME_DIR / 'bus')
+        self.paths[bus] = ('ro-bind', str(DBUS_PROXY_PATH))
+        self.env['DBUS_SESSION_BUS_ADDRESS'] = f'unix:path={bus}'
+
     def push_rule(self, key, args, *, cwd):
         if key == 'import':
             if len(args) != 1:
@@ -90,6 +111,13 @@ class RuleSet:
             if len(args) != 0:
                 raise RuleError(key, args)
             self.share_net = True
+        elif key in [
+            'dbus-see', 'dbus-talk', 'dbus-own', 'dbus-call', 'dbus-broadcast'
+        ]:
+            if len(args) != 1:
+                raise RuleError(key, args)
+            self.ensure_dbus()
+            self.dbus[args[0]] = key.removeprefix('dbus-')
         elif key == 'env':
             var, value = self.parse_env(key, args)
             self.env[var] = value
@@ -145,6 +173,8 @@ class RuleSet:
         ]
         if not self.share_net:
             cmd += ['--unshare-net']
+        if self.sync_fds is not None:
+            cmd += ['--sync-fd', str(self.sync_fds[0])]
         for key, value in self.env.items():
             if value is not None:
                 cmd += ['--setenv', key, value]
@@ -155,6 +185,20 @@ class RuleSet:
             else:
                 cmd += [f'--{typ}-try', src, target]
         return cmd + bwrap_args
+
+    def build_dbus(self):
+        if self.sync_fds is None:
+            return None
+        cmd = [
+            'xdg-dbus-proxy',
+            f'--fd={self.sync_fds[1]}',
+            os.getenv('DBUS_SESSION_BUS_ADDRESS'),
+            str(DBUS_PROXY_PATH),
+            '--filter',
+        ]
+        for value, typ in sorted(self.dbus.items()):
+            cmd.append(f'--{typ}={value}')
+        return cmd
 
 
 if __name__ == '__main__':
@@ -168,9 +212,14 @@ if __name__ == '__main__':
         print(USAGE)
         sys.exit(1)
     cmd = rules.build(tail)
+    dbus_cmd = rules.build_dbus()
     if rules.usage:
         print(USAGE)
     elif rules.debug:
         print(' '.join(cmd))
+        if dbus_cmd:
+            print(' '.join(dbus_cmd))
     else:
+        if dbus_cmd:
+            subprocess.Popen(dbus_cmd, pass_fds=[rules.sync_fds[1]])
         os.execvp('/usr/bin/bwrap', cmd)

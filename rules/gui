@@ -1,5 +1,8 @@
 import graphics
+
 env HOME
+env GTK_USE_PORTAL 1
+
 ro-bind /etc/fonts
 ro-bind /usr/share/fonts
 ro-bind /usr/share/icons
@@ -9,4 +12,9 @@ ro-bind $HOME/.local/share/icons
 ro-bind $HOME/.local/share/themes
 bind $HOME/.cache/fontconfig
 bind $HOME/.cache/thumbnails
+
 ro-bind $HOME/.config/dconf/user
+
+dbus-talk org.a11y.Bus
+dbus-talk org.freedesktop.portal.Desktop
+dbus-talk org.freedesktop.portal.Documents
