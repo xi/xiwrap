@@ -1,0 +1,2 @@
+dbus-talk org.freedesktop.portal.Desktop
+dbus-talk org.freedesktop.portal.Documents

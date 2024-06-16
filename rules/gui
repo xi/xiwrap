@@ -20,5 +20,4 @@ bind-try $XDG_CACHE_HOME/thumbnails
 dbus-talk org.a11y.Bus
 
 setenv GTK_USE_PORTAL 1
-dbus-talk org.freedesktop.portal.Desktop
-dbus-talk org.freedesktop.portal.Documents
+import portal
