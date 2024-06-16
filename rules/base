@@ -1,0 +1,8 @@
+import env-lang
+setenv TERM
+setenv USER
+setenv HOME
+
+tmpfs /tmp
+dev /dev
+proc /proc

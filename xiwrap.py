@@ -58,11 +58,7 @@ class RuleError(ValueError):
 class RuleSet:
     def __init__(self):
         self.env = {}
-        self.paths = {
-            '/tmp': ('tmpfs', None),
-            '/dev': ('dev', None),
-            '/proc': ('proc', None),
-        }
+        self.paths = {}
         self.dbus = {}
         self.share = {}
         self.sync_fds = None
