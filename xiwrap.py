@@ -14,13 +14,13 @@ DBUS_PROXY_PATH = XDG_RUNTIME_DIR / f'dbus-proxy-{os.getpid()}'
 
 USAGE = """Usage: xiwrap [OPTION]... -- [BWRAP_OPTIONS]... CMD
 
-Example: xiwrap --import host-os --env TERM -- --chdir /tmp bash
+Example: xiwrap --import host-os --setenv TERM -- --chdir /tmp bash
 
 The following options are available:
 
 -h, --help              Print this message and exit
 --debug                 Print the bwrap command instead of executing it.
---env VAR [VALUE]       Set an environment variable. If VALUE is not provided,
+--setenv VAR [VALUE]    Set an environment variable. If VALUE is not provided,
                         the value from the current environment is kept.
 --bind DEST [SRC]       Bind mount the host path SRC on DEST. If SRC is not
                         provided, it is the same as DEST. Ignored if SRC does
@@ -118,7 +118,7 @@ class RuleSet:
                 raise RuleError(key, args)
             self.ensure_dbus()
             self.dbus[args[0]] = key.removeprefix('dbus-')
-        elif key == 'env':
+        elif key == 'setenv':
             var, value = self.parse_env(key, args)
             self.env[var] = value
         elif key in ['ro-bind', 'bind']:
