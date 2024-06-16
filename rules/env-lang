@@ -1,0 +1,15 @@
+setenv LANG
+setenv LANGUAGE
+setenv LC_ALL
+setenv LC_ADDRESS
+setenv LC_COLLATE
+setenv LC_CTYPE
+setenv LC_IDENTIFICATION
+setenv LC_MEASUREMENT
+setenv LC_MESSAGES
+setenv LC_MONETARY
+setenv LC_NAME
+setenv LC_NUMERIC
+setenv LC_PAPER
+setenv LC_TELEPHONE
+setenv LC_TIME
