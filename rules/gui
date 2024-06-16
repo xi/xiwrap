@@ -1,5 +1,6 @@
-setenv HOME
 setenv XDG_RUNTIME_DIR
+setenv XDG_DATA_HOME
+setenv XDG_CACHE_HOME
 
 setenv DISPLAY
 setenv WAYLAND_DISPLAY
@@ -10,11 +11,11 @@ ro-bind-try /etc/fonts
 ro-bind-try /usr/share/fonts
 ro-bind-try /usr/share/icons
 ro-bind-try /usr/share/themes/
-ro-bind-try $HOME/.local/share/fonts
-ro-bind-try $HOME/.local/share/icons
-ro-bind-try $HOME/.local/share/themes
-bind-try $HOME/.cache/fontconfig
-bind-try $HOME/.cache/thumbnails
+ro-bind-try $XDG_DATA_HOME/fonts
+ro-bind-try $XDG_DATA_HOME/icons
+ro-bind-try $XDG_DATA_HOME/themes
+bind-try $XDG_CACHE_HOME/fontconfig
+bind-try $XDG_CACHE_HOME/thumbnails
 
 dbus-talk org.a11y.Bus
 

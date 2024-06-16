@@ -1,16 +1,7 @@
 import os
 import subprocess
 import sys
-from os.path import expandvars
 from pathlib import Path
-
-XDG_RUNTIME_DIR = Path(os.getenv('XDG_RUNTIME_DIR'))
-XDG_CONFIG_HOME = Path(os.getenv('XDG_CONFIG_HOME', '~/.config')).expanduser()
-
-USER_CONFIG = XDG_CONFIG_HOME / 'xiwrap'
-SYSTEM_CONFIG = Path('/etc') / 'xiwrap'
-
-DBUS_PROXY_PATH = XDG_RUNTIME_DIR / f'dbus-proxy-{os.getpid()}'
 
 USAGE = """Usage: xiwrap [OPTION]... -- CMD
 
@@ -48,11 +39,46 @@ The following options are available:
                         Empty lines or lines starting with # are ignored.
 """
 
+DBUS_SRC = f'{os.environ["XDG_RUNTIME_DIR"]}/dbus-proxy-{os.getpid()}'
+DBUS_DEST = '$XDG_RUNTIME_DIR/bus'
+
 
 class RuleError(ValueError):
     def __init__(self, key, args):
         rule = ' '.join([key, *args])
         super().__init__(f'Invalid rule: {rule}')
+
+
+def expandvars(path, env):
+    # https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html
+
+    if not path.startswith('$'):
+        return path
+
+    for var, default in [
+        ('HOME', None),
+        ('XDG_DATA_HOME', '.local/share'),
+        ('XDG_CONFIG_HOME', '.config'),
+        ('XDG_STATE_HOME', '.local/state'),
+        ('XDG_CACHE_HOME', '.cache'),
+        ('XDG_RUNTIME_DIR', None),
+    ]:
+        if path.startswith(f'${var}'):
+            if env.get(var):
+                head = Path(env.get(var))
+            elif default is not None:
+                head = Path(env.get('HOME')) / default
+            else:
+                raise ValueError(
+                    f'Invalid path {path}: {var} is not defined in this context.'
+                )
+            if '/' in path:
+                tail = path.removeprefix(f'${var}/')
+                return str(head / tail)
+            else:
+                return str(head)
+
+    raise ValueError(path)
 
 
 class RuleSet:
@@ -64,13 +90,15 @@ class RuleSet:
         self.sync_fds = None
         self.debug = False
         self.usage = False
+        self.userconfig = Path(expandvars('$XDG_CONFIG_HOME/xiwrap', os.environ))
+        self.sysconfig = Path('/etc/xiwrap')
 
     def find_config_file(self, name, cwd):
         if name.startswith('/'):
             return Path(name)
         elif name.startswith('~'):
             return Path(name).expanduser()
-        for base in [cwd, USER_CONFIG, SYSTEM_CONFIG]:
+        for base in [cwd, self.userconfig, self.sysconfig]:
             path = base / name
             if path.exists():
                 return path
@@ -96,9 +124,7 @@ class RuleSet:
         if self.sync_fds is not None:
             return
         self.sync_fds = os.pipe2(0)
-        bus = str(XDG_RUNTIME_DIR / 'bus')
-        self.paths[bus] = ('ro-bind', str(DBUS_PROXY_PATH))
-        self.env['DBUS_SESSION_BUS_ADDRESS'] = f'unix:path={bus}'
+        self.push_rule('ro-bind', [DBUS_SRC, DBUS_DEST], cwd=None)
 
     def push_rule(self, key, args, *, cwd):
         if key == 'import':
@@ -129,11 +155,11 @@ class RuleSet:
             'ro-bind-try',
         ]:
             src, target = self.parse_path(key, args)
-            self.paths[expandvars(target)] = (key, expandvars(src))
+            self.paths[target] = (key, src)
         elif key in ['tmpfs', 'dev', 'proc', 'mqueue', 'dir']:
             if len(args) != 1:
                 raise RuleError(key, args)
-            self.paths[expandvars(args[0])] = (key, None)
+            self.paths[args[0]] = (key, None)
         else:
             raise RuleError(key, args)
 
@@ -178,18 +204,22 @@ class RuleSet:
         ]
         if self.sync_fds is not None:
             cmd += ['--sync-fd', str(self.sync_fds[0])]
+            bus = expandvars(DBUS_DEST, self.env)
+            cmd += ['--setenv', 'DBUS_SESSION_BUS_ADDRESS', f'unix:path={bus}']
         for key in ['share-ipc', 'share-pid', 'share-net']:
             if not self.share.get(key):
                 cmd.append(f'--un{key}')
         for key, value in self.env.items():
             if value is not None:
                 cmd += ['--setenv', key, value]
-        for target, value in sorted(self.paths.items()):
-            typ, src = value
+        for target, typ, src in sorted(
+            (expandvars(target, self.env), *value)
+            for target, value in self.paths.items()
+        ):
             if src is None:
                 cmd += [f'--{typ}', target]
             else:
-                cmd += [f'--{typ}', src, target]
+                cmd += [f'--{typ}', expandvars(src, os.environ), target]
         return cmd + bwrap_args
 
     def build_dbus(self):
@@ -199,7 +229,7 @@ class RuleSet:
             'xdg-dbus-proxy',
             f'--fd={self.sync_fds[1]}',
             os.getenv('DBUS_SESSION_BUS_ADDRESS'),
-            str(DBUS_PROXY_PATH),
+            DBUS_SRC,
             '--filter',
         ]
         for value, typ in sorted(self.dbus.items()):
