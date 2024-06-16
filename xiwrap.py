@@ -228,4 +228,5 @@ if __name__ == '__main__':
     else:
         if dbus_cmd:
             subprocess.Popen(dbus_cmd, pass_fds=[rules.sync_fds[1]])
+            os.read(rules.sync_fds[0], 1)
         os.execvp('/usr/bin/bwrap', cmd)
