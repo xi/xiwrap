@@ -1,7 +1,10 @@
-import graphics
+setenv HOME
+setenv XDG_RUNTIME_DIR
 
-env HOME
-env GTK_USE_PORTAL 1
+setenv DISPLAY
+setenv WAYLAND_DISPLAY
+setenv XDG_CURRENT_DESKTOP
+ro-bind $XDG_RUNTIME_DIR/$WAYLAND_DISPLAY
 
 ro-bind /etc/fonts
 ro-bind /usr/share/fonts
@@ -13,8 +16,8 @@ ro-bind $HOME/.local/share/themes
 bind $HOME/.cache/fontconfig
 bind $HOME/.cache/thumbnails
 
-ro-bind $HOME/.config/dconf/user
-
 dbus-talk org.a11y.Bus
+
+setenv GTK_USE_PORTAL 1
 dbus-talk org.freedesktop.portal.Desktop
 dbus-talk org.freedesktop.portal.Documents
