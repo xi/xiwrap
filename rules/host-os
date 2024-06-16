@@ -1,8 +1,8 @@
-ro-bind /usr
-ro-bind /bin
-ro-bind /sbin
-ro-bind /lib
-ro-bind /lib32
-ro-bind /lib64
-ro-bind /etc/ld.so.cache
-ro-bind /etc/alternatives
+ro-bind-try /usr
+ro-bind-try /bin
+ro-bind-try /sbin
+ro-bind-try /lib
+ro-bind-try /lib32
+ro-bind-try /lib64
+ro-bind-try /etc/ld.so.cache
+ro-bind-try /etc/alternatives

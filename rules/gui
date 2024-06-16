@@ -6,15 +6,15 @@ setenv WAYLAND_DISPLAY
 setenv XDG_CURRENT_DESKTOP
 ro-bind $XDG_RUNTIME_DIR/$WAYLAND_DISPLAY
 
-ro-bind /etc/fonts
-ro-bind /usr/share/fonts
-ro-bind /usr/share/icons
-ro-bind /usr/share/themes/
-ro-bind $HOME/.local/share/fonts
-ro-bind $HOME/.local/share/icons
-ro-bind $HOME/.local/share/themes
-bind $HOME/.cache/fontconfig
-bind $HOME/.cache/thumbnails
+ro-bind-try /etc/fonts
+ro-bind-try /usr/share/fonts
+ro-bind-try /usr/share/icons
+ro-bind-try /usr/share/themes/
+ro-bind-try $HOME/.local/share/fonts
+ro-bind-try $HOME/.local/share/icons
+ro-bind-try $HOME/.local/share/themes
+bind-try $HOME/.cache/fontconfig
+bind-try $HOME/.cache/thumbnails
 
 dbus-talk org.a11y.Bus
 

@@ -12,32 +12,35 @@ SYSTEM_CONFIG = Path('/etc') / 'xiwrap'
 
 DBUS_PROXY_PATH = XDG_RUNTIME_DIR / f'dbus-proxy-{os.getpid()}'
 
-USAGE = """Usage: xiwrap [OPTION]... -- [BWRAP_OPTIONS]... CMD
+USAGE = """Usage: xiwrap [OPTION]... -- CMD
 
-Example: xiwrap --import host-os --setenv TERM -- --chdir /tmp bash
+Example: xiwrap --import host-os --setenv TERM -- bash
 
 The following options are available:
 
 -h, --help              Print this message and exit
 --debug                 Print the bwrap command instead of executing it.
+--share-pid             Do not create new pid namespace.
+--share-net             Do not create new network namespace.
+--share-ipc             Do not create new ipc namespace.
 --setenv VAR [VALUE]    Set an environment variable. If VALUE is not provided,
-                        the value from the current environment is kept.
---bind DEST [SRC]       Bind mount the host path SRC on DEST. If SRC is not
-                        provided, it is the same as DEST. Ignored if SRC does
-                        not exist.
---ro-bind DEST [SRC]    Bind mount the host path SRC readonly on DEST. If SRC
-                        is not provided, it is the same as DEST. Ignored if SRC
-                        does not exist.
+                        share it from the current environment
+--bind SRC [DEST], --bind-try SRC [DEST], --dev-bind SRC [DEST],
+--dev-bind-try SRC [DEST], --ro-bind SRC [DEST], --ro-bind-try SRC [DEST]
+                        Bind mount the host path SRC on DEST. If SRC is not
+                        provided, it is the same as DEST. See `man bwrap` for
+                        details.
 --proc DEST             Mount new procfs on DEST.
 --dev DEST              Mount new dev on DEST.
 --tmpfs DEST            Mount new tmpfs on DEST.
---share-net             Do not create new network namespace.
+--mqueue DEST           Mount new mqueue on DEST.
+--dir DEST              Create a directory at DEST.
 --dbus-see NAME         Allow to see NAME on the session bus.
 --dbus-talk NAME        Allow to talk to NAME on the session bus.
 --dbus-own NAME         Allow to own NAME on the session bus.
---dbus-call NAME=RULE   Set a rule for calls on the given name.
+--dbus-call NAME=RULE   Set a rule for method calls on NAME.
 --dbus-broadcast NAME=RULE
-                        Set a rule for broadcast signals from the given name.
+                        Set a rule for broadcast signals from NAME.
 --import FILE           Load additional options from FILE. FILE can be an
                         absolute path or relative to the current directory,
                         $XDG_CONFIG_HOME/xiwrap/ or /etc/xiwrap/. FILE must
@@ -61,7 +64,7 @@ class RuleSet:
             '/proc': ('proc', None),
         }
         self.dbus = {}
-        self.share_net = False
+        self.share = {}
         self.sync_fds = None
         self.debug = False
         self.usage = False
@@ -107,10 +110,10 @@ class RuleSet:
                 raise RuleError(key, args)
             path = self.find_config_file(args[0], cwd)
             self.read_config_file(path)
-        elif key == 'share-net':
+        elif key in ['share-ipc', 'share-pid', 'share-net']:
             if len(args) != 0:
                 raise RuleError(key, args)
-            self.share_net = True
+            self.share[key] = True
         elif key in [
             'dbus-see', 'dbus-talk', 'dbus-own', 'dbus-call', 'dbus-broadcast'
         ]:
@@ -121,10 +124,17 @@ class RuleSet:
         elif key == 'setenv':
             var, value = self.parse_env(key, args)
             self.env[var] = value
-        elif key in ['ro-bind', 'bind']:
+        elif key in [
+            'bind',
+            'bind-try',
+            'dev-bind',
+            'dev-bind-try',
+            'ro-bind',
+            'ro-bind-try',
+        ]:
             src, target = self.parse_path(key, args)
             self.paths[expandvars(target)] = (key, expandvars(src))
-        elif key in ['tmpfs', 'dev', 'proc']:
+        elif key in ['tmpfs', 'dev', 'proc', 'mqueue', 'dir']:
             if len(args) != 1:
                 raise RuleError(key, args)
             self.paths[expandvars(args[0])] = (key, None)
@@ -169,12 +179,12 @@ class RuleSet:
             'bwrap',
             '--die-with-parent',
             '--clearenv',
-            '--unshare-pid',
         ]
-        if not self.share_net:
-            cmd += ['--unshare-net']
         if self.sync_fds is not None:
             cmd += ['--sync-fd', str(self.sync_fds[0])]
+        for key in ['share-ipc', 'share-pid', 'share-net']:
+            if not self.share.get(key):
+                cmd.append(f'--un{key}')
         for key, value in self.env.items():
             if value is not None:
                 cmd += ['--setenv', key, value]
@@ -183,7 +193,7 @@ class RuleSet:
             if src is None:
                 cmd += [f'--{typ}', target]
             else:
-                cmd += [f'--{typ}-try', src, target]
+                cmd += [f'--{typ}', src, target]
         return cmd + bwrap_args
 
     def build_dbus(self):
