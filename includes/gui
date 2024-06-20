@@ -17,7 +17,7 @@ ro-bind-try $XDG_DATA_HOME/themes
 bind-try $XDG_CACHE_HOME/fontconfig
 bind-try $XDG_CACHE_HOME/thumbnails
 
-dbus-talk org.a11y.Bus
+dbus-session-talk org.a11y.Bus
 
 setenv GTK_USE_PORTAL 1
 include portal

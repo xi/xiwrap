@@ -28,11 +28,12 @@ The following options are available:
 --tmpfs DEST            Mount new tmpfs on DEST.
 --mqueue DEST           Mount new mqueue on DEST.
 --dir DEST              Create a directory at DEST.
---dbus-see NAME         Allow to see NAME on the session bus.
---dbus-talk NAME        Allow to talk to NAME on the session bus.
---dbus-own NAME         Allow to own NAME on the session bus.
---dbus-call NAME=RULE   Set a rule for method calls on NAME.
---dbus-broadcast NAME=RULE
+--dbus-session-see NAME, --dbus-session-talk NAME, --dbus-session-own NAME,
+--dbus-session-call NAME=RULE, --dbus-session-broadcast NAME=RULE,
+--dbus-system-see NAME, --dbus-system-talk NAME, --dbus-system-own NAME,
+--dbus-system-call NAME=RULE, --dbus-system-broadcast NAME=RULE
+                        Allow filtered access to dbus. See `man xdg-dbus-proxy`
+                        for detauls.
                         Set a rule for broadcast signals from NAME.
 --include FILE          Load additional options from FILE. FILE can be an
                         absolute path or relative to the current directory,
@@ -42,8 +43,10 @@ The following options are available:
                         starting with # are ignored.
 """
 
-DBUS_SRC = f'{os.environ["XDG_RUNTIME_DIR"]}/dbus-proxy-{os.getpid()}'
-DBUS_DEST = '$XDG_RUNTIME_DIR/bus'
+DBUS_SESSION_SRC = f'{os.environ["XDG_RUNTIME_DIR"]}/dbus-session-proxy-{os.getpid()}'
+DBUS_SESSION_DEST = '$XDG_RUNTIME_DIR/bus'
+DBUS_SYSTEM_SRC = f'{os.environ["XDG_RUNTIME_DIR"]}/dbus-system-proxy-{os.getpid()}'
+DBUS_SYSTEM_DEST = '/var/run/dbus/system_bus_socket'
 
 
 class RuleError(ValueError):
@@ -88,7 +91,8 @@ class RuleSet:
     def __init__(self):
         self.env = {}
         self.paths = {}
-        self.dbus = {}
+        self.dbus_session = {}
+        self.dbus_system = {}
         self.share = {}
         self.sync_fds = None
         self.debug = False
@@ -125,11 +129,9 @@ class RuleSet:
         else:
             raise RuleError(key, args)
 
-    def ensure_dbus(self):
-        if self.sync_fds is not None:
-            return
-        self.sync_fds = os.pipe2(0)
-        self.push_rule('ro-bind', [DBUS_SRC, DBUS_DEST], cwd=None)
+    def ensure_sync_fds(self):
+        if self.sync_fds is None:
+            self.sync_fds = os.pipe2(0)
 
     def push_rule(self, key, args, *, cwd):
         if key == 'include':
@@ -142,12 +144,29 @@ class RuleSet:
                 raise RuleError(key, args)
             self.share[key] = True
         elif key in [
-            'dbus-see', 'dbus-talk', 'dbus-own', 'dbus-call', 'dbus-broadcast'
+            'dbus-session-see',
+            'dbus-session-talk',
+            'dbus-session-own',
+            'dbus-session-call',
+            'dbus-session-broadcast',
         ]:
             if len(args) != 1:
                 raise RuleError(key, args)
-            self.ensure_dbus()
-            self.dbus[args[0]] = key.removeprefix('dbus-')
+            self.ensure_sync_fds()
+            self.push_rule('ro-bind', [DBUS_SESSION_SRC, DBUS_SESSION_DEST], cwd=None)
+            self.dbus_session[args[0]] = key.removeprefix('dbus-session-')
+        elif key in [
+            'dbus-system-see',
+            'dbus-system-talk',
+            'dbus-system-own',
+            'dbus-system-call',
+            'dbus-system-broadcast',
+        ]:
+            if len(args) != 1:
+                raise RuleError(key, args)
+            self.ensure_sync_fds()
+            self.push_rule('ro-bind', [DBUS_SYSTEM_SRC, DBUS_SYSTEM_DEST], cwd=None)
+            self.dbus_system[args[0]] = key.removeprefix('dbus-system-')
         elif key == 'setenv':
             var, value = self.parse_env(key, args)
             self.env[var] = value
@@ -209,7 +228,8 @@ class RuleSet:
         ]
         if self.sync_fds is not None:
             cmd += ['--sync-fd', str(self.sync_fds[0])]
-            bus = expandvars(DBUS_DEST, self.env)
+        if self.dbus_session:
+            bus = expandvars(DBUS_SESSION_DEST, self.env)
             cmd += ['--setenv', 'DBUS_SESSION_BUS_ADDRESS', f'unix:path={bus}']
         for key in ['share-ipc', 'share-pid', 'share-net']:
             if not self.share.get(key):
@@ -227,17 +247,34 @@ class RuleSet:
                 cmd += [f'--{typ}', expandvars(src, os.environ), target]
         return cmd + bwrap_args
 
-    def build_dbus(self):
-        if self.sync_fds is None:
+    def build_dbus_session(self):
+        if not self.dbus_session:
             return None
         cmd = [
             'xdg-dbus-proxy',
             f'--fd={self.sync_fds[1]}',
             os.getenv('DBUS_SESSION_BUS_ADDRESS'),
-            DBUS_SRC,
+            DBUS_SESSION_SRC,
             '--filter',
         ]
-        for value, typ in sorted(self.dbus.items()):
+        for value, typ in sorted(self.dbus_session.items()):
+            cmd.append(f'--{typ}={value}')
+        return cmd
+
+    def build_dbus_system(self):
+        if not self.dbus_system:
+            return None
+        cmd = [
+            'xdg-dbus-proxy',
+            f'--fd={self.sync_fds[1]}',
+            os.getenv(
+                'DBUS_SYSTEM_BUS_ADDRESS',
+                'unix:path=/var/run/dbus/system_bus_socket',
+            ),
+            DBUS_SYSTEM_SRC,
+            '--filter',
+        ]
+        for value, typ in sorted(self.dbus_system.items()):
             cmd.append(f'--{typ}={value}')
         return cmd
 
@@ -253,15 +290,21 @@ if __name__ == '__main__':
         print(USAGE)
         sys.exit(1)
     cmd = rules.build(tail)
-    dbus_cmd = rules.build_dbus()
+    dbus_system_cmd = rules.build_dbus_system()
+    dbus_session_cmd = rules.build_dbus_session()
     if rules.usage:
         print(USAGE)
     elif rules.debug:
         print(' '.join(cmd))
-        if dbus_cmd:
-            print(' '.join(dbus_cmd))
+        if dbus_system_cmd:
+            print(' '.join(dbus_system_cmd))
+        if dbus_session_cmd:
+            print(' '.join(dbus_session_cmd))
     else:
-        if dbus_cmd:
-            subprocess.Popen(dbus_cmd, pass_fds=[rules.sync_fds[1]])
-            os.read(rules.sync_fds[0], 1)
+        if dbus_system_cmd:
+            subprocess.Popen(dbus_system_cmd, pass_fds=[rules.sync_fds[1]])
+            os.read(rules.sync_fds[0], 8)
+        if dbus_session_cmd:
+            subprocess.Popen(dbus_session_cmd, pass_fds=[rules.sync_fds[1]])
+            os.read(rules.sync_fds[0], 8)
         os.execvp('/usr/bin/bwrap', cmd)
