@@ -55,7 +55,7 @@ class RuleError(ValueError):
         super().__init__(f'Invalid rule: {rule}')
 
 
-def expandvars(path, env):
+def xdg_expandvars(path, env):
     # https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html
 
     if not path.startswith('$'):
@@ -87,6 +87,11 @@ def expandvars(path, env):
                 raise ValueError(f'Invalid path {path}')
 
     raise ValueError(f'Invalid path {path}')
+
+
+def expandvars(path, env):
+    path = xdg_expandvars(path, env)
+    return os.path.expandvars(path)
 
 
 class RuleSet:
@@ -291,9 +296,11 @@ if __name__ == '__main__':
     except ValueError:
         print(USAGE)
         sys.exit(1)
+
     cmd = rules.build(tail)
     dbus_system_cmd = rules.build_dbus_system()
     dbus_session_cmd = rules.build_dbus_session()
+
     if rules.usage:
         print(USAGE)
     elif rules.debug:
