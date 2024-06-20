@@ -62,7 +62,7 @@ def expandvars(path, env):
         return path
 
     for var, default in [
-        ('HOME', None),
+        ('HOME', ''),
         ('XDG_DATA_HOME', '.local/share'),
         ('XDG_CONFIG_HOME', '.config'),
         ('XDG_STATE_HOME', '.local/state'),
@@ -72,8 +72,8 @@ def expandvars(path, env):
         if path.startswith(f'${var}'):
             if env.get(var):
                 head = Path(env.get(var))
-            elif default is not None:
-                head = Path(env.get('HOME')) / default
+            elif default is not None and 'HOME' in env:
+                head = Path(env['HOME']) / default
             else:
                 raise ValueError(
                     f'Invalid path {path}: {var} is not defined in this context.'
@@ -81,10 +81,12 @@ def expandvars(path, env):
             if '/' in path:
                 tail = path.removeprefix(f'${var}/')
                 return str(head / tail)
-            else:
+            elif path == f'${var}':
                 return str(head)
+            else:
+                raise ValueError(f'Invalid path {path}')
 
-    raise ValueError(path)
+    raise ValueError(f'Invalid path {path}')
 
 
 class RuleSet:
