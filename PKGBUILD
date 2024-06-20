@@ -15,7 +15,7 @@ depends=(
 package() {
 	install -Dm 755 xiwrap.py "$pkgdir/usr/bin/xiwrap"
 	install -Dm 644 README.md "$pkgdir/usr/share/docs/xiwrap/README.md"
-	git ls-files rules | while read -r l; do
+	git ls-files includes | while read -r l; do
 		install -Dm 644 "$l" "$pkgdir/etc/xiwrap/$l"
 	done
 }

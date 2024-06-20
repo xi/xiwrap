@@ -7,7 +7,7 @@ from pathlib import Path
 
 USAGE = """Usage: xiwrap [OPTION]... -- CMD
 
-Example: xiwrap --import host-os --setenv TERM -- bash
+Example: xiwrap --include host-os --setenv TERM -- bash
 
 The following options are available:
 
@@ -34,11 +34,12 @@ The following options are available:
 --dbus-call NAME=RULE   Set a rule for method calls on NAME.
 --dbus-broadcast NAME=RULE
                         Set a rule for broadcast signals from NAME.
---import FILE           Load additional options from FILE. FILE can be an
+--include FILE          Load additional options from FILE. FILE can be an
                         absolute path or relative to the current directory,
-                        $XDG_CONFIG_HOME/xiwrap/ or /etc/xiwrap/. FILE must
-                        contain one option per line, without the leading --.
-                        Empty lines or lines starting with # are ignored.
+                        $XDG_CONFIG_HOME/xiwrap/includes/ or
+                        /etc/xiwrap/includes/. FILE must contain one option per
+                        line, without the leading --. Empty lines or lines
+                        starting with # are ignored.
 """
 
 DBUS_SRC = f'{os.environ["XDG_RUNTIME_DIR"]}/dbus-proxy-{os.getpid()}'
@@ -92,8 +93,10 @@ class RuleSet:
         self.sync_fds = None
         self.debug = False
         self.usage = False
-        self.userconfig = Path(expandvars('$XDG_CONFIG_HOME/xiwrap', os.environ))
-        self.sysconfig = Path('/etc/xiwrap')
+        self.userconfig = Path(
+            expandvars('$XDG_CONFIG_HOME/xiwrap/includes', os.environ)
+        )
+        self.sysconfig = Path('/etc/xiwrap/includes')
 
     def find_config_file(self, name, cwd):
         if name.startswith('/'):
@@ -129,7 +132,7 @@ class RuleSet:
         self.push_rule('ro-bind', [DBUS_SRC, DBUS_DEST], cwd=None)
 
     def push_rule(self, key, args, *, cwd):
-        if key == 'import':
+        if key == 'include':
             if len(args) != 1:
                 raise RuleError(key, args)
             path = self.find_config_file(args[0], cwd)
