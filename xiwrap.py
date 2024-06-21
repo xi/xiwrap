@@ -28,8 +28,8 @@ The following options are available:
 --tmpfs DEST            Mount new tmpfs on DEST.
 --mqueue DEST           Mount new mqueue on DEST.
 --dir DEST              Create a directory at DEST.
---dbus-session-see NAME, --dbus-session-talk NAME, --dbus-session-own NAME,
---dbus-session-call NAME=RULE, --dbus-session-broadcast NAME=RULE,
+--dbus-see NAME, --dbus-talk NAME, --dbus-own NAME,
+--dbus-call NAME=RULE, --dbus-broadcast NAME=RULE,
 --dbus-system-see NAME, --dbus-system-talk NAME, --dbus-system-own NAME,
 --dbus-system-call NAME=RULE, --dbus-system-broadcast NAME=RULE
                         Allow filtered access to dbus. See `man xdg-dbus-proxy`
@@ -150,18 +150,12 @@ class RuleSet:
             if len(args) != 0:
                 raise RuleError(key, args)
             self.share[key] = True
-        elif key in [
-            'dbus-session-see',
-            'dbus-session-talk',
-            'dbus-session-own',
-            'dbus-session-call',
-            'dbus-session-broadcast',
-        ]:
+        elif key in ['dbus-see', 'dbus-talk', 'dbus-own', 'dbus-call', 'dbus-broadcast']:
             if len(args) != 1:
                 raise RuleError(key, args)
             self.ensure_sync_fds()
             self.push_rule('ro-bind', [DBUS_SESSION_SRC, DBUS_SESSION_DEST], cwd=None)
-            self.dbus_session[args[0]] = key.removeprefix('dbus-session-')
+            self.dbus_session[args[0]] = key.removeprefix('dbus-')
         elif key in [
             'dbus-system-see',
             'dbus-system-talk',
