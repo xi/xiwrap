@@ -57,3 +57,4 @@ different runtime for an application, but that is not the focus.
 -   https://docs.flatpak.org/en/latest/sandbox-permissions.html
 -   https://github.com/ruanformigoni/flatimage/
 -   https://github.com/netblue30/firejail
+-   https://github.com/igo95862/bubblejail
