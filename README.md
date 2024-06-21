@@ -16,6 +16,11 @@ xiwrap --include host-os --dbus-session-talk org.freedesktop.portal.Desktop -- b
 
 See `xiwrap --help` for a full list of options.
 
+## Security disclaimer
+
+I am not an expert and this project is meant more for learning and
+experimenting than for production use.
+
 ## Why another tool?
 
 Linux has great low-level sandboxing features. However, I feel like we have not
