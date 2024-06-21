@@ -1,2 +1,3 @@
 setenv XDG_RUNTIME_DIR
 ro-bind $XDG_RUNTIME_DIR/pulse
+ro-bind $XDG_RUNTIME_DIR/pipewire-0
