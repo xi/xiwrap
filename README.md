@@ -39,22 +39,28 @@ modules.
 ## Why not flatpak?
 
 flatpak is a mature and well established project that also uses bwrap and
-xdg-dbus-proxy.
+xdg-dbus-proxy. I actually really like [the high level
+permissions](https://docs.flatpak.org/en/latest/sandbox-permissions.html) they
+have been building.
 
-However, flatpak's main goal is to simplfy packaging for Linux. Their
-vision is that users get their apps directly from developers instead of going
-through distros. Sandboxing is a necessary condition for that vision, but not
-the main goal. Another condition is that libraries are not managed centrally,
-but come bundle with each app. As a result, they are often redundant or even
-outdated.
+However, flatpak does much more then just sandboxing. With flatpak, libraries
+are not managed centrally, but come bundle with each app. As a result, they are
+often redundant or even outdated. This is because flatpak's main goal is to
+simplify packaging for Linux. Their vision is that users get their apps
+directly from developers instead of going through distros. Sandboxing is a
+necessary condition for that vision, but not a goal in itself. Much of the
+criticism flatpak received ([[1]](http://flatkill.org/)
+[[2]](https://ludocode.com/blog/flatpak-is-not-the-future)) is targeted at this
+second aspect.
 
-xiwarp on the other hand is fully focused on security. It supports using a
-different runtime for an application, but that is not the focus.
+So you can think of xiwrap as an attempt to build something that has all of
+flatpak's sandboxing features, but none of the rest. Not because flatpak is
+bad, but because strong, usable sandboxing is also useful in the context of a
+traditional distro.
 
 ## Prior Art
 
 -   https://wiki.archlinux.org/title/Bubblewrap/Examples
--   https://docs.flatpak.org/en/latest/sandbox-permissions.html
 -   https://github.com/ruanformigoni/flatimage/
 -   https://github.com/netblue30/firejail
 -   https://github.com/igo95862/bubblejail
