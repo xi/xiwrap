@@ -11,7 +11,7 @@ xiwrap is a thin wrapper around
 ## Example usage
 
 ```
-xiwrap --include host-os --dbus-session-talk org.freedesktop.portal.Desktop -- bash
+xiwrap --include host-os --dbus-talk org.freedesktop.portal.Desktop -- bash
 ```
 
 See `xiwrap --help` for a full list of options.
@@ -32,7 +32,7 @@ and [firejail](https://github.com/netblue30/firejail)) that experiment with
 alternative designs. I think this is great. We have to allow for some creative
 chaos to come up with great designs. xiwrap is my contribution to that mess.
 
-The real goal is to find a set up reusable, easy-to-understand configuration
+The real goal is to find a set of reusable, easy-to-understand configuration
 modules. xiwrap is only a tool that allows me to easily iterate on those
 modules.
 
