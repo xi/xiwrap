@@ -12,6 +12,8 @@ Example: xiwrap --include host-os --setenv TERM -- bash
 The following options are available:
 
 -h, --help              Print this message and exit
+--app-id                Set an ID that can be used by portals to reliably
+                        identify the application.
 --debug                 Print the bwrap command instead of executing it.
 --share-pid             Do not create new pid namespace.
 --share-net             Do not create new network namespace.
@@ -96,11 +98,22 @@ def expandvars(path, env):
 
 
 class DBusProxy:
-    def __init__(self, rules, dest, src, sync_fd):
+    def __init__(self, rules, dest, src, app_id, sync_fd):
         self.cmd = ['xdg-dbus-proxy', f'--fd={sync_fd}', dest, src, '--filter']
         for value, typ in sorted(rules.items()):
             self.cmd.append(f'--{typ}={value}')
-        self.fds = [sync_fd]
+
+        wrapper = RuleSet()
+        wrapper.push_rule('tmpfs', ['/tmp'])
+        wrapper.push_rule('dev', ['/dev'])
+        wrapper.push_rule('proc', ['/proc'])
+        for path in ['/bin', '/lib', '/lib64', '/usr', '/etc', '/run']:
+            wrapper.push_rule('bind', [path])
+        if app_id:
+            wrapper.push_rule('app-id', [app_id])
+
+        self.cmd = wrapper.build(self.cmd)
+        self.fds = [sync_fd, *wrapper.fds]
 
     def popen(self):
         return subprocess.Popen(self.cmd, pass_fds=self.fds)
@@ -113,7 +126,9 @@ class RuleSet:
         self.dbus_session = {}
         self.dbus_system = {}
         self.share = {}
+        self.app_id = None
         self.sync_fds = None
+        self.fds = []
         self.debug = False
         self.usage = False
         self.userconfig = Path(
@@ -158,6 +173,12 @@ class RuleSet:
                 raise RuleError(key, args)
             path = self.find_config_file(args[0], cwd)
             self.read_config_file(path)
+        elif key == 'app-id':
+            if len(args) != 1:
+                raise RuleError(key, args)
+            self.app_id = args[0]
+            info = f'[Application]\nname={self.app_id}\n'
+            self.push_rule('bind-text', [info, '/.flatpak-info'])
         elif key in ['share-ipc', 'share-pid', 'share-net']:
             if len(args) != 0:
                 raise RuleError(key, args)
@@ -200,6 +221,7 @@ class RuleSet:
             r, w = os.pipe2(0)
             os.write(w, text.encode())
             os.close(w)
+            self.fds.append(r)
             self.paths[target] = ('bind-data', str(r))
         elif key in ['tmpfs', 'dev', 'proc', 'mqueue', 'dir']:
             if len(args) != 1:
@@ -275,6 +297,7 @@ class RuleSet:
             self.dbus_session,
             os.getenv('DBUS_SESSION_BUS_ADDRESS'),
             DBUS_SESSION_SRC,
+            self.app_id,
             self.sync_fds[1],
         )
 
@@ -288,6 +311,7 @@ class RuleSet:
                 'unix:path=/var/run/dbus/system_bus_socket',
             ),
             DBUS_SYSTEM_SRC,
+            self.app_id,
             self.sync_fds[1],
         )
 
