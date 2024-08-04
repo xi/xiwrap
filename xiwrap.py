@@ -140,7 +140,7 @@ class RuleSet:
         if self.sync_fds is None:
             self.sync_fds = os.pipe2(0)
 
-    def push_rule(self, key, args, *, cwd):
+    def push_rule(self, key, args, *, cwd=None):
         if key == 'include':
             if len(args) != 1:
                 raise RuleError(key, args)
@@ -154,7 +154,7 @@ class RuleSet:
             if len(args) != 1:
                 raise RuleError(key, args)
             self.ensure_sync_fds()
-            self.push_rule('ro-bind', [DBUS_SESSION_SRC, DBUS_SESSION_DEST], cwd=None)
+            self.push_rule('ro-bind', [DBUS_SESSION_SRC, DBUS_SESSION_DEST])
             self.dbus_session[args[0]] = key.removeprefix('dbus-')
         elif key in [
             'dbus-system-see',
@@ -166,7 +166,7 @@ class RuleSet:
             if len(args) != 1:
                 raise RuleError(key, args)
             self.ensure_sync_fds()
-            self.push_rule('ro-bind', [DBUS_SYSTEM_SRC, DBUS_SYSTEM_DEST], cwd=None)
+            self.push_rule('ro-bind', [DBUS_SYSTEM_SRC, DBUS_SYSTEM_DEST])
             self.dbus_system[args[0]] = key.removeprefix('dbus-system-')
         elif key == 'setenv':
             var, value = self.parse_env(key, args)
