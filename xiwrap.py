@@ -104,13 +104,13 @@ class DBusProxy:
             self.cmd.append(f'--{typ}={value}')
 
         wrapper = RuleSet()
-        wrapper.push_rule('tmpfs', ['/tmp'])
-        wrapper.push_rule('dev', ['/dev'])
-        wrapper.push_rule('proc', ['/proc'])
+        wrapper.push_rule('tmpfs', '/tmp')
+        wrapper.push_rule('dev', '/dev')
+        wrapper.push_rule('proc', '/proc')
         for path in ['/bin', '/lib', '/lib64', '/usr', '/etc', '/run']:
-            wrapper.push_rule('bind', [path])
+            wrapper.push_rule('bind', path)
         if app_id:
-            wrapper.push_rule('app-id', [app_id])
+            wrapper.push_rule('app-id', app_id)
 
         self.cmd = wrapper.build(self.cmd)
         self.fds = [sync_fd, *wrapper.fds]
@@ -167,7 +167,7 @@ class RuleSet:
         if self.sync_fds is None:
             self.sync_fds = os.pipe2(0)
 
-    def push_rule(self, key, args, *, cwd=None):
+    def push_rule(self, key, *args, cwd=None):
         if key == 'include':
             if len(args) != 1:
                 raise RuleError(key, args)
@@ -178,7 +178,7 @@ class RuleSet:
                 raise RuleError(key, args)
             self.app_id = args[0]
             info = f'[Application]\nname={self.app_id}\n'
-            self.push_rule('bind-text', [info, '/.flatpak-info'])
+            self.push_rule('bind-text', info, '/.flatpak-info')
         elif key in ['share-ipc', 'share-pid', 'share-net']:
             if len(args) != 0:
                 raise RuleError(key, args)
@@ -187,7 +187,7 @@ class RuleSet:
             if len(args) != 1:
                 raise RuleError(key, args)
             self.ensure_sync_fds()
-            self.push_rule('ro-bind', [DBUS_SESSION_SRC, DBUS_SESSION_DEST])
+            self.push_rule('ro-bind', DBUS_SESSION_SRC, DBUS_SESSION_DEST)
             self.dbus_session[args[0]] = key.removeprefix('dbus-')
         elif key in [
             'dbus-system-see',
@@ -199,7 +199,7 @@ class RuleSet:
             if len(args) != 1:
                 raise RuleError(key, args)
             self.ensure_sync_fds()
-            self.push_rule('ro-bind', [DBUS_SYSTEM_SRC, DBUS_SYSTEM_DEST])
+            self.push_rule('ro-bind', DBUS_SYSTEM_SRC, DBUS_SYSTEM_DEST)
             self.dbus_system[args[0]] = key.removeprefix('dbus-system-')
         elif key == 'setenv':
             var, value = self.parse_env(key, args)
@@ -237,8 +237,7 @@ class RuleSet:
                 if not line or line.startswith('#'):
                     continue
                 try:
-                    parts = line.split()
-                    self.push_rule(parts[0], parts[1:], cwd=path.parent)
+                    self.push_rule(*line.split(), cwd=path.parent)
                 except RuleError as e:
                     raise SyntaxError(str(e), (path, lineno, 1, line)) from e
 
@@ -248,7 +247,7 @@ class RuleSet:
         for i, token in enumerate(argv):
             if token == '--':
                 if key is not None:
-                    self.push_rule(key, args, cwd=Path.cwd())
+                    self.push_rule(key, *args, cwd=Path.cwd())
                 return argv[i + 1:]
             elif token in ['-h', '--help']:
                 self.usage = True
@@ -256,7 +255,7 @@ class RuleSet:
                 self.debug = True
             elif token.startswith('--'):
                 if key is not None:
-                    self.push_rule(key, args, cwd=Path.cwd())
+                    self.push_rule(key, *args, cwd=Path.cwd())
                 key = token.removeprefix('--')
                 args = []
             else:
