@@ -94,6 +94,17 @@ def expandvars(path, env):
     return os.path.expandvars(path)
 
 
+class DBusProxy:
+    def __init__(self, rules, dest, src, sync_fd):
+        self.cmd = ['xdg-dbus-proxy', f'--fd={sync_fd}', dest, src, '--filter']
+        for value, typ in sorted(rules.items()):
+            self.cmd.append(f'--{typ}={value}')
+        self.fds = [sync_fd]
+
+    def popen(self):
+        return subprocess.Popen(self.cmd, pass_fds=self.fds)
+
+
 class RuleSet:
     def __init__(self):
         self.env = {}
@@ -251,33 +262,25 @@ class RuleSet:
     def build_dbus_session(self):
         if not self.dbus_session:
             return None
-        cmd = [
-            'xdg-dbus-proxy',
-            f'--fd={self.sync_fds[1]}',
+        return DBusProxy(
+            self.dbus_session,
             os.getenv('DBUS_SESSION_BUS_ADDRESS'),
             DBUS_SESSION_SRC,
-            '--filter',
-        ]
-        for value, typ in sorted(self.dbus_session.items()):
-            cmd.append(f'--{typ}={value}')
-        return cmd
+            self.sync_fds[1],
+        )
 
     def build_dbus_system(self):
         if not self.dbus_system:
             return None
-        cmd = [
-            'xdg-dbus-proxy',
-            f'--fd={self.sync_fds[1]}',
+        return self.build_dbus_proxy(
+            self.dbus_system,
             os.getenv(
                 'DBUS_SYSTEM_BUS_ADDRESS',
                 'unix:path=/var/run/dbus/system_bus_socket',
             ),
             DBUS_SYSTEM_SRC,
-            '--filter',
-        ]
-        for value, typ in sorted(self.dbus_system.items()):
-            cmd.append(f'--{typ}={value}')
-        return cmd
+            self.sync_fds[1],
+        )
 
 
 if __name__ == '__main__':
@@ -292,22 +295,22 @@ if __name__ == '__main__':
         sys.exit(1)
 
     cmd = rules.build(tail)
-    dbus_system_cmd = rules.build_dbus_system()
-    dbus_session_cmd = rules.build_dbus_session()
+    dbus_system = rules.build_dbus_system()
+    dbus_session = rules.build_dbus_session()
 
     if rules.usage:
         print(USAGE)
     elif rules.debug:
         print(' '.join(cmd))
-        if dbus_system_cmd:
-            print(' '.join(dbus_system_cmd))
-        if dbus_session_cmd:
-            print(' '.join(dbus_session_cmd))
+        if dbus_system:
+            print(' '.join(dbus_system.cmd))
+        if dbus_session:
+            print(' '.join(dbus_session.cmd))
     else:
-        if dbus_system_cmd:
-            subprocess.Popen(dbus_system_cmd, pass_fds=[rules.sync_fds[1]])
+        if dbus_system:
+            dbus_system.popen()
             os.read(rules.sync_fds[0], 8)
-        if dbus_session_cmd:
-            subprocess.Popen(dbus_session_cmd, pass_fds=[rules.sync_fds[1]])
+        if dbus_session:
+            dbus_session.popen()
             os.read(rules.sync_fds[0], 8)
         os.execvp('/usr/bin/bwrap', cmd)
