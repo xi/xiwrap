@@ -1,2 +1,0 @@
-setenv SNAP 1
-ro-bind /dev/null /.flatpak-info

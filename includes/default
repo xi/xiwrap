@@ -1,5 +1,4 @@
 include base
-include detection
 include locale
 include host-os
 include portal
