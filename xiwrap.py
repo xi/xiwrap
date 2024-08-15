@@ -20,8 +20,7 @@ The following options are available:
 --share-ipc             Do not create new ipc namespace.
 --setenv VAR [VALUE]    Set an environment variable. If VALUE is not provided,
                         share it from the current environment
---bind SRC [DEST], --bind-try SRC [DEST], --dev-bind SRC [DEST],
---dev-bind-try SRC [DEST], --ro-bind SRC [DEST], --ro-bind-try SRC [DEST]
+--[ro-]bind[-try] SRC [DEST], --dev-bind[-try] SRC [DEST]
                         Bind mount the host path SRC on DEST. If SRC is not
                         provided, it is the same as DEST. See `man bwrap` for
                         details.
