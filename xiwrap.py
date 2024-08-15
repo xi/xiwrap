@@ -24,7 +24,8 @@ The following options are available:
                         Bind mount the host path SRC on DEST. If SRC is not
                         provided, it is the same as DEST. See `man bwrap` for
                         details.
---bind-text TEXT DEST   Copy TEXT to a file which is bind-mounted on DEST.
+--ro-bind-text TEXT DEST
+                        Copy TEXT to a file which is bind-mounted on DEST.
 --proc DEST             Mount new procfs on DEST.
 --dev DEST              Mount new dev on DEST.
 --tmpfs DEST            Mount new tmpfs on DEST.
@@ -177,7 +178,7 @@ class RuleSet:
                 raise RuleError(key, args)
             self.app_id = args[0]
             info = f'[Application]\nname={self.app_id}\n'
-            self.push_rule('bind-text', info, '/.flatpak-info')
+            self.push_rule('ro-bind-text', info, '/.flatpak-info')
         elif key in ['share-ipc', 'share-pid', 'share-net']:
             if len(args) != 0:
                 raise RuleError(key, args)
@@ -213,7 +214,7 @@ class RuleSet:
         ]:
             src, target = self.parse_path(key, args)
             self.paths[target] = (key, src)
-        elif key == 'bind-text':
+        elif key == 'ro-bind-text':
             if len(args) != 2:
                 raise RuleError(key, args)
             text, target = args
@@ -221,7 +222,7 @@ class RuleSet:
             os.write(w, text.encode())
             os.close(w)
             self.fds.append(r)
-            self.paths[target] = ('bind-data', str(r))
+            self.paths[target] = ('ro-bind-data', str(r))
         elif key in ['tmpfs', 'dev', 'proc', 'mqueue', 'dir']:
             if len(args) != 1:
                 raise RuleError(key, args)
