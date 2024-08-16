@@ -60,6 +60,7 @@ traditional distro.
 
 ## Prior Art
 
+-   https://github.com/flatpak/flatpak/issues/3638
 -   https://wiki.archlinux.org/title/Bubblewrap/Examples
 -   https://github.com/ruanformigoni/flatimage/
 -   https://github.com/netblue30/firejail
