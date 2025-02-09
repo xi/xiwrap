@@ -36,7 +36,7 @@ The following options are available:
 --dbus-system-see NAME, --dbus-system-talk NAME, --dbus-system-own NAME,
 --dbus-system-call NAME=RULE, --dbus-system-broadcast NAME=RULE
                         Allow filtered access to dbus. See `man xdg-dbus-proxy`
-                        for detauls.
+                        for details.
                         Set a rule for broadcast signals from NAME.
 --include FILE          Load additional options from FILE. FILE can be an
                         absolute path or relative to the current directory,
