@@ -43,7 +43,7 @@ xdg-dbus-proxy. I actually really like [the high level
 permissions](https://docs.flatpak.org/en/latest/sandbox-permissions.html) they
 have been building.
 
-However, flatpak does much more then just sandboxing. With flatpak, libraries
+However, flatpak does much more than just sandboxing. With flatpak, libraries
 are not managed centrally, but come bundle with each app. As a result, they are
 often redundant or even outdated. This is because flatpak's main goal is to
 simplify packaging for Linux. Their vision is that users get their apps
