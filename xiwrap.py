@@ -38,7 +38,7 @@ The following options are available:
                         Allow filtered access to dbus. See `man xdg-dbus-proxy`
                         for details.
                         Set a rule for broadcast signals from NAME.
---include FILE          Load additional options from FILE. FILE can be an
+-I FILE --include FILE  Load additional options from FILE. FILE can be an
                         absolute path or relative to the current directory,
                         $XDG_CONFIG_HOME/xiwrap/includes/ or
                         /etc/xiwrap/includes/. FILE must contain one option per
@@ -245,6 +245,8 @@ class RuleSet:
         key = None
         args = []
         for i, token in enumerate(argv):
+            if token == '-I':
+                token = '--include'
             if token == '--':
                 if key is not None:
                     self.push_rule(key, *args, cwd=Path.cwd())
