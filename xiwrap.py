@@ -37,7 +37,6 @@ The following options are available:
 --dbus-system-call NAME=RULE, --dbus-system-broadcast NAME=RULE
                         Allow filtered access to dbus. See `man xdg-dbus-proxy`
                         for details.
-                        Set a rule for broadcast signals from NAME.
 -I FILE --include FILE  Load additional options from FILE. FILE can be an
                         absolute path or relative to the current directory,
                         $XDG_CONFIG_HOME/xiwrap/includes/ or
