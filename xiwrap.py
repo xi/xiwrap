@@ -106,8 +106,9 @@ class DBusProxy:
         wrapper.push_rule('tmpfs', '/tmp')
         wrapper.push_rule('dev', '/dev')
         wrapper.push_rule('proc', '/proc')
-        for path in ['/bin', '/lib', '/lib64', '/usr', '/etc', '/run']:
-            wrapper.push_rule('bind', path)
+        wrapper.push_rule('bind', '/run')
+        for path in ['/bin', '/lib', '/lib64', '/usr', '/etc']:
+            wrapper.push_rule('ro-bind-try', path)
         if app_id:
             wrapper.push_rule('app-id', app_id)
 
