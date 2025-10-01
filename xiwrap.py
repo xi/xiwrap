@@ -287,8 +287,12 @@ class RuleSet:
         ):
             if src is None:
                 cmd += [f'--{typ}', target]
+            elif typ == 'ro-bind-data':
+                cmd += [f'--{typ}', src, target]
             else:
-                cmd += [f'--{typ}', expandvars(src, os.environ), target]
+                src = expandvars(src, os.environ)
+                src = os.path.realpath(src)
+                cmd += [f'--{typ}', src, target]
         return cmd + bwrap_args
 
     def build_dbus_session(self):
