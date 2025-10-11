@@ -50,6 +50,14 @@ DBUS_SESSION_DEST = '$XDG_RUNTIME_DIR/bus'
 DBUS_SYSTEM_SRC = f'{os.environ["XDG_RUNTIME_DIR"]}/dbus-system-proxy-{os.getpid()}'
 DBUS_SYSTEM_DEST = '/run/dbus/system_bus_socket'
 
+# https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html
+XDG_DEFAULTS = {
+    'XDG_DATA_HOME': '.local/share',
+    'XDG_CONFIG_HOME': '.config',
+    'XDG_STATE_HOME': '.local/state',
+    'XDG_CACHE_HOME': '.cache',
+}
+
 
 class RuleError(ValueError):
     def __init__(self, key, args):
@@ -57,43 +65,19 @@ class RuleError(ValueError):
         super().__init__(f'Invalid rule: {rule}')
 
 
-def xdg_expandvars(path, env):
-    # https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html
-
-    if not path.startswith('$'):
-        return path
-
-    for var, default in [
-        ('HOME', ''),
-        ('XDG_DATA_HOME', '.local/share'),
-        ('XDG_CONFIG_HOME', '.config'),
-        ('XDG_STATE_HOME', '.local/state'),
-        ('XDG_CACHE_HOME', '.cache'),
-        ('XDG_RUNTIME_DIR', None),
-    ]:
-        if path.startswith(f'${var}'):
-            if env.get(var):
-                head = Path(env.get(var))
-            elif default is not None and 'HOME' in env:
-                head = Path(env['HOME']) / default
-            else:
-                raise ValueError(
-                    f'Invalid path {path}: {var} is not defined in this context.'
-                )
-            if '/' in path:
-                tail = path.removeprefix(f'${var}/')
-                return str(head / tail)
-            elif path == f'${var}':
-                return str(head)
-            else:
-                raise ValueError(f'Invalid path {path}')
-
-    raise ValueError(f'Invalid path {path}')
-
-
 def expandvars(path, env):
-    path = xdg_expandvars(path, env)
-    return os.path.expandvars(path)
+    original = os.environ
+
+    os.environ = {**env}
+    if 'HOME' in env:
+        for var, default in XDG_DEFAULTS.items():
+            if var not in env:
+                os.environ[var] = str(Path(env['HOME']) / default)
+
+    try:
+        return os.path.expandvars(path)
+    finally:
+        os.environ = original
 
 
 class DBusProxy:
@@ -203,7 +187,8 @@ class RuleSet:
             self.dbus_system[args[0]] = key.removeprefix('dbus-system-')
         elif key == 'setenv':
             var, value = self.parse_env(key, args)
-            self.env[var] = value
+            if value is not None:
+                self.env[var] = value
         elif key in [
             'bind',
             'bind-try',
