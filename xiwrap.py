@@ -48,7 +48,7 @@ The following options are available:
 DBUS_SESSION_SRC = f'{os.environ["XDG_RUNTIME_DIR"]}/dbus-session-proxy-{os.getpid()}'
 DBUS_SESSION_DEST = '$XDG_RUNTIME_DIR/bus'
 DBUS_SYSTEM_SRC = f'{os.environ["XDG_RUNTIME_DIR"]}/dbus-system-proxy-{os.getpid()}'
-DBUS_SYSTEM_DEST = '/var/run/dbus/system_bus_socket'
+DBUS_SYSTEM_DEST = '/run/dbus/system_bus_socket'
 
 
 class RuleError(ValueError):
@@ -313,7 +313,7 @@ class RuleSet:
             self.dbus_system,
             os.getenv(
                 'DBUS_SYSTEM_BUS_ADDRESS',
-                'unix:path=/var/run/dbus/system_bus_socket',
+                'unix:path=/run/dbus/system_bus_socket',
             ),
             DBUS_SYSTEM_SRC,
             self.app_id,
