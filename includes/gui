@@ -19,5 +19,4 @@ bind-try $XDG_CACHE_HOME/thumbnails
 
 dbus-talk org.a11y.Bus
 
-setenv GTK_USE_PORTAL 1
 include portal

@@ -1,2 +1,6 @@
+# NOTE: there is no standardized mechanism to make applications actually use
+# the portals
+
+# setenv GIO_USE_PORTALS 1
 dbus-talk org.freedesktop.portal.Desktop
 dbus-talk org.freedesktop.portal.Documents
