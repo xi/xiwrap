@@ -1,8 +1,10 @@
-setenv TERM
 setenv USER
 setenv HOME
 setenv XDG_RUNTIME_DIR
+setenv TERM
+setenv SHELL
 
 tmpfs /tmp
 dev /dev
 proc /proc
+# tmpfs $XDG_RUNTIME_DIR

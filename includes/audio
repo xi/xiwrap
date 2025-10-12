@@ -1,3 +1,4 @@
-setenv XDG_RUNTIME_DIR
+# NOTE: allows full privileged access
+
 ro-bind $XDG_RUNTIME_DIR/pulse
 ro-bind $XDG_RUNTIME_DIR/pipewire-0

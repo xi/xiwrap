@@ -1,0 +1,4 @@
+# NOTE: allows full privileged access
+
+dbus-talk org.a11y.Bus
+ro-bind-try $XDG_RUNTIME_DIR/at-spi
