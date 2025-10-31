@@ -4,6 +4,7 @@ ro-bind-try /etc/alternatives
 
 # usr-merge symlinks
 ro-bind-try /bin
+ro-bind-try /sbin
 ro-bind-try /lib
 ro-bind-try /lib32
 ro-bind-try /lib64
