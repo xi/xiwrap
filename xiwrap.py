@@ -22,8 +22,6 @@ The following options are available:
                         Bind mount the host path SRC on DEST. If SRC is not
                         provided, it is the same as DEST. See `man bwrap` for
                         details.
---ro-bind-text TEXT DEST
-                        Copy TEXT to a file which is bind-mounted on DEST.
 --proc DEST             Mount new procfs on DEST.
 --dev DEST              Mount new dev on DEST.
 --tmpfs DEST            Mount new tmpfs on DEST.
@@ -188,15 +186,6 @@ class RuleSet:
         ]:
             src, target = self.parse_path(key, args)
             self.paths[target] = (key, src)
-        elif key == 'ro-bind-text':
-            if len(args) != 2:
-                raise RuleError(key, args)
-            text, target = args
-            r, w = os.pipe2(0)
-            os.write(w, text.encode())
-            os.close(w)
-            self.fds.append(r)
-            self.paths[target] = ('ro-bind-data', str(r))
         elif key in ['tmpfs', 'dev', 'proc', 'mqueue', 'dir']:
             if len(args) != 1:
                 raise RuleError(key, args)
@@ -261,8 +250,6 @@ class RuleSet:
         ):
             if src is None:
                 cmd += [f'--{typ}', target]
-            elif typ == 'ro-bind-data':
-                cmd += [f'--{typ}', src, target]
             else:
                 src = expandvars(src, os.environ)
                 src = os.path.realpath(src)
