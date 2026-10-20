@@ -8,7 +8,6 @@ url='https://github.com/xi/xiwrap'
 license='MIT'
 depends=(
 	bubblewrap
-	xdg-dbus-proxy
 	python3
 )
 

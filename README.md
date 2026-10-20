@@ -5,13 +5,11 @@ xiwrap is a thin wrapper around
 
 -   configuration can be included from files. This allows to create a library
     of reusable modules.
--   [xdg-dbus-proxy](https://github.com/flatpak/xdg-dbus-proxy) is integrated
-    to allow dbus filtering.
 
 ## Example usage
 
 ```
-xiwrap --include host-os --dbus-talk org.freedesktop.portal.Desktop -- bash
+xiwrap --include base --include host-os -- bash
 ```
 
 See `xiwrap --help` for a full list of options.
@@ -20,6 +18,38 @@ See `xiwrap --help` for a full list of options.
 
 I am not an expert and this project is meant more for learning and
 experimenting than for production use.
+
+## Using with xdg-dbus-proxy
+
+In some cases, sandboxed services might need access to DBus services.
+Unfortunately, DBus exposes all services on a single socket. Sharing that
+socket would be dangerous (e.g. the `org.freedesktop.systemd1` and
+`org.freedesktop.portal.Flatpak` services explicitly provide sandboxed
+escapes).
+
+Instead, you should use
+[xdg-dbus-proxy](https://github.com/flatpak/xdg-dbus-proxy) to provided
+filtered access. For example, this systemd service will only allow access to
+[desktop portals](https://flatpak.github.io/xdg-desktop-portal/docs/):
+
+    [Unit]
+    Description=Default proxy to session bus
+
+    [Service]
+    ExecStart=xdg-dbus-proxy \
+      unix:path=$XDG_RUNTIME_DIR/bus \
+      $XDG_RUNTIME_DIR/dbus-session-proxy \
+      --filter \
+      --talk=org.freedesktop.portal.Desktop \
+      --talk=org.freedesktop.portal.Documents
+
+    [Install]
+    WantedBy=default.target
+
+You can then share that socket with the sandbox:
+
+    setenv DBUS_SESSION_BUS_ADDRESS
+    ro-bind-try $XDG_RUNTIME_DIR/dbus-session-proxy $XDG_RUNTIME_DIR/bus
 
 ## Why another tool?
 
