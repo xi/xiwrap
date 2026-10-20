@@ -12,8 +12,6 @@ Example: xiwrap --include host-os --setenv TERM -- bash
 The following options are available:
 
 -h, --help              Print this message and exit
---app-id                Set an ID that can be used by portals to reliably
-                        identify the application.
 --debug                 Print the bwrap command instead of executing it.
 --share-pid             Do not create new pid namespace.
 --share-net             Do not create new network namespace.
@@ -93,8 +91,6 @@ class DBusProxy:
         wrapper.push_rule('bind', '/run')
         for path in ['/bin', '/lib', '/lib64', '/usr', '/etc']:
             wrapper.push_rule('ro-bind-try', path)
-        if app_id:
-            wrapper.push_rule('app-id', app_id)
 
         self.cmd = wrapper.build(self.cmd)
         self.fds = [sync_fd, *wrapper.fds]
@@ -110,7 +106,6 @@ class RuleSet:
         self.dbus_session = {}
         self.dbus_system = {}
         self.share = {}
-        self.app_id = None
         self.sync_fds = None
         self.fds = []
         self.debug = False
@@ -157,12 +152,6 @@ class RuleSet:
                 raise RuleError(key, args)
             path = self.find_config_file(args[0], cwd)
             self.read_config_file(path)
-        elif key == 'app-id':
-            if len(args) != 1:
-                raise RuleError(key, args)
-            self.app_id = args[0]
-            info = f'[Application]\nname={self.app_id}\n'
-            self.push_rule('ro-bind-text', info, '/.flatpak-info')
         elif key in ['share-ipc', 'share-pid', 'share-net']:
             if len(args) != 0:
                 raise RuleError(key, args)
