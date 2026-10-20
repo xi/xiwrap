@@ -13,6 +13,7 @@ The following options are available:
 
 -h, --help              Print this message and exit
 --debug                 Print the bwrap command instead of executing it.
+--chdir DIR             Change directory to DIR
 --share-pid             Do not create new pid namespace.
 --share-net             Do not create new network namespace.
 --share-ipc             Do not create new ipc namespace.
@@ -67,6 +68,7 @@ def expandvars(path, env):
 
 class RuleSet:
     def __init__(self):
+        self.chdir = None
         self.env = {}
         self.paths = {}
         self.share = {}
@@ -110,6 +112,10 @@ class RuleSet:
                 raise RuleError(key, args)
             path = self.find_config_file(args[0], cwd)
             self.read_config_file(path)
+        elif key == 'chdir':
+            if len(args) != 1:
+                raise RuleError(key, args)
+            self.chdir = args[0]
         elif key in ['share-ipc', 'share-pid', 'share-net']:
             if len(args) != 0:
                 raise RuleError(key, args)
@@ -191,6 +197,8 @@ class RuleSet:
                 src = expandvars(src, os.environ)
                 src = os.path.realpath(src)
                 cmd += [f'--{typ}', src, target]
+        if self.chdir:
+            cmd += ['--chdir', self.chdir]
         return cmd + bwrap_args
 
 
