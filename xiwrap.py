@@ -36,6 +36,8 @@ The following options are available:
                         starting with # are ignored.
 """
 
+XDG_CONFIG_HOME = Path(os.getenv('XDG_CONFIG_HOME', '~/.config')).expanduser()
+
 # https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html
 XDG_DEFAULTS = {
     'XDG_DATA_HOME': '.local/share',
@@ -74,10 +76,8 @@ class RuleSet:
         self.share = {}
         self.debug = False
         self.usage = False
-        self.userconfig = Path(
-            expandvars('$XDG_CONFIG_HOME/xiwrap/includes', os.environ)
-        )
-        self.sysconfig = Path('/etc/xiwrap/includes')
+        self.userconfig = XDG_CONFIG_HOME / 'xiwrap' / 'includes'
+        self.sysconfig = Path('/etc') / 'xiwrap' / 'includes'
 
     def find_config_file(self, name, cwd):
         if name.startswith('/'):
