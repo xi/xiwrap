@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import os
-import subprocess
 import sys
 from pathlib import Path
 
@@ -51,6 +50,19 @@ class RuleError(ValueError):
     def __init__(self, key, args):
         rule = ' '.join([key, *args])
         super().__init__(f'Invalid rule: {rule}')
+
+
+def format_cmd(bwrap, cmd):
+    lines = [[bwrap[0]]]
+    for s in bwrap[1:]:
+        if s.startswith('-'):
+            lines.append([s])
+        elif ' ' in s or '$' in s:
+            lines[-1].append(f'"{s}"')
+        else:
+            lines[-1].append(s)
+    lines.append(cmd)
+    return ' \\\n  '.join(' '.join(line) for line in lines)
 
 
 def expandvars(path, env):
@@ -175,7 +187,7 @@ class RuleSet:
                 args.append(token)
         raise ValueError('--')
 
-    def build(self, bwrap_args):
+    def build(self):
         cmd = [
             'bwrap',
             '--die-with-parent',
@@ -199,13 +211,13 @@ class RuleSet:
                 cmd += [f'--{typ}', src, target]
         if self.chdir:
             cmd += ['--chdir', self.chdir]
-        return cmd + bwrap_args
+        return cmd
 
 
 if __name__ == '__main__':
     rules = RuleSet()
     try:
-        tail = rules.read_argv(sys.argv)
+        cmd = rules.read_argv(sys.argv)
     except SyntaxError as e:
         print(f'{e.filename}:{e.lineno}: {e.msg}', file=sys.stderr)
         sys.exit(1)
@@ -213,11 +225,11 @@ if __name__ == '__main__':
         print(USAGE)
         sys.exit(1)
 
-    cmd = rules.build(tail)
+    bwrap = rules.build()
 
     if rules.usage:
         print(USAGE)
     elif rules.debug:
-        print(' '.join(cmd))
+        print(format_cmd(bwrap, cmd))
     else:
-        os.execvp('/usr/bin/bwrap', cmd)
+        os.execvp('/usr/bin/bwrap', [*bwrap, *cmd])
