@@ -3,13 +3,17 @@ xiwrap - slightly higher-level container setup utility
 xiwrap is a thin wrapper around
 [bwrap](https://github.com/containers/bubblewrap) that adds some features:
 
--   configuration can be included from files. This allows to create a library
+-   reasonable defaults
+-   rules are reorderd and optimized to avoid footguns
+-   rules can be included from files. This allows to create a library
     of reusable modules.
+-   [XDG Base Directories](https://specifications.freedesktop.org/basedir/latest/)
+    are expanded to their default values
 
 ## Example usage
 
 ```
-xiwrap --include base --include host-os -- bash
+xiwrap -I base -I host-os -- bash
 ```
 
 See `xiwrap --help` for a full list of options.
