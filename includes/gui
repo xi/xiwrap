@@ -1,7 +1,3 @@
-setenv XDG_RUNTIME_DIR
-setenv XDG_DATA_HOME
-setenv XDG_CACHE_HOME
-
 setenv WAYLAND_DISPLAY
 setenv XDG_CURRENT_DESKTOP
 setenv XDG_SEAT
