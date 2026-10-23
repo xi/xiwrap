@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import contextlib
 import os
 import sys
 from pathlib import Path
@@ -65,19 +66,24 @@ def format_cmd(bwrap, cmd):
     return ' \\\n  '.join(' '.join(line) for line in lines)
 
 
-def expandvars(path, env):
+@contextlib.contextmanager
+def patch_env(env):
     original = os.environ
+    os.environ = env  # noqa: B003
+    try:
+        yield
+    finally:
+        os.environ = original  # noqa: B003
 
-    os.environ = {**env}
+
+def expandvars(path, env):
+    env = {**env}
     if 'HOME' in env:
         for var, default in XDG_DEFAULTS.items():
             if var not in env:
-                os.environ[var] = str(Path(env['HOME']) / default)
-
-    try:
+                env[var] = str(Path(env['HOME']) / default)
+    with patch_env(env):
         return os.path.expandvars(path)
-    finally:
-        os.environ = original
 
 
 class RuleSet:
