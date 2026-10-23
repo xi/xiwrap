@@ -7,12 +7,12 @@ setenv XDG_CURRENT_DESKTOP
 setenv XDG_SEAT
 setenv XDG_SESSION_CLASS
 setenv XDG_SESSION_TYPE
-ro-bind $XDG_RUNTIME_DIR/$WAYLAND_DISPLAY
+ro-bind-try $XDG_RUNTIME_DIR/$WAYLAND_DISPLAY
 
 ro-bind-try /etc/fonts
 ro-bind-try /usr/share/fonts
 ro-bind-try /usr/share/icons
-ro-bind-try /usr/share/themes/
+ro-bind-try /usr/share/themes
 ro-bind-try $XDG_DATA_HOME/fonts
 ro-bind-try $XDG_DATA_HOME/icons
 ro-bind-try $XDG_DATA_HOME/themes
