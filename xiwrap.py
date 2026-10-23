@@ -205,16 +205,25 @@ class RuleSet:
         for key, value in self.env.items():
             if value is not None:
                 cmd += ['--setenv', key, value]
+        prev = None, None, None
         for target, typ, src in sorted(
             (expandvars(target, self.env), *value)
             for target, value in self.paths.items()
         ):
+            if (
+                typ == prev[0]
+                and Path(src).is_relative_to(prev[1])
+                and Path(target).is_relative_to(prev[2])
+                and Path(src).relative_to(prev[1]) == Path(target).relative_to(prev[2])
+            ):
+                continue
             if src is None:
                 cmd += [f'--{typ}', target]
             else:
                 src = expandvars(src, os.environ)
                 src = os.path.realpath(src)
                 cmd += [f'--{typ}', src, target]
+            prev = typ, src, target
         if self.chdir:
             cmd += ['--chdir', self.chdir]
         return cmd

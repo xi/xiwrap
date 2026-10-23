@@ -91,3 +91,20 @@ class TestProcess(unittest.TestCase):
             '--setenv', 'HOME', '/home/bar',
             '--bind', '/home/foo/.config/test', '/home/bar/.config/test',
         ])
+
+    def test_omit_redundant_bind(self):
+        self._test([
+            ['bind', '/'],
+            ['bind', '/usr'],
+        ], [
+            '--bind', '/', '/',
+        ])
+
+    def test_no_omit_common_prefix(self):
+        self._test([
+            ['bind', '/lib'],
+            ['bind', '/lib32'],
+        ], [
+            '--bind', '/lib', '/lib',
+            '--bind', '/lib32', '/lib32',
+        ])
