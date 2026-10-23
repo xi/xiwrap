@@ -1,0 +1,7 @@
+setenv USER
+setenv HOME
+setenv XDG_RUNTIME_DIR
+setenv TERM
+setenv SHELL
+
+tmpfs $XDG_RUNTIME_DIR
