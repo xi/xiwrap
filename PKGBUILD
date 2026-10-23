@@ -1,7 +1,7 @@
 # https://gist.github.com/xi/6bc37c57498ec649b2775647b63bd9e0
 
 pkgname='xiwrap'
-pkgver='0.0.0'
+pkgver='0.2.0'
 pkgdesc='slightly higher-level container setup utility'
 arch=('all')
 url='https://github.com/xi/xiwrap'
